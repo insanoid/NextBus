@@ -42,16 +42,16 @@ class TransitDeparture {
   factory TransitDeparture.fromJson(Map<String, dynamic> json) {
     int delay = json["line"]["delay"] == null ? 0 : json["line"]["delay"];
     DateTime departureTime;
-    if(json['when'] != null) {
+    if (json['when'] != null) {
       departureTime =
-      DateTime.parse(json['when']).add(Duration(minutes: delay));
+          DateTime.parse(json['when']).add(Duration(minutes: delay));
     }
     TransitType type = TransitType.values.firstWhere(
         (e) => e.toString() == "TransitType.${json["line"]["product"]}");
 
     return TransitDeparture(
         direction: json["direction"],
-        when: departureTime == null ? Set() :Set.from([departureTime]),
+        when: departureTime == null ? Set() : Set.from([departureTime]),
         name: json["line"]["name"],
         transitType: type,
         isNight: json["line"]["night"],
@@ -98,7 +98,7 @@ class TransitDepartureList {
   List<TransitDeparture> groupedDepartures() {
     Map<String, TransitDeparture> groupedDepartures = Map();
     for (TransitDeparture departure in this.departures) {
-      if(departure.when.length <= 0) {
+      if (departure.when.length <= 0) {
         continue;
       }
       var key = "${departure.name}/${departure.direction}";

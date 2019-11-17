@@ -10,7 +10,8 @@ class NetworkError {
   NetworkError({this.message, this.headerCode, this.response, this.requestURL});
 
   factory NetworkError.fromResponse(Response response) {
-    return NetworkError(message: response.data,
+    return NetworkError(
+        message: response.data,
         headerCode: response.statusCode,
         requestURL: response.request.uri,
         response: response);

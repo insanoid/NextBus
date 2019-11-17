@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:next_bus/models/transit_departure.dart';
 import 'package:next_bus/models/transit_style.dart';
 
 // A UI to show the list of departures with pull-to-refresh feature.
 class DepartureList extends StatefulWidget {
-  DepartureList({Key key, this.departures}) : super(key: key);
+  DepartureList({Key key, this.departures, this.geolocationStatus})
+      : super(key: key);
 
   final List<TransitDeparture> departures;
+  GeolocationStatus geolocationStatus;
 
   @override
   State<StatefulWidget> createState() {
@@ -18,7 +21,34 @@ class DepartureList extends StatefulWidget {
 class _DepartureListState extends State<DepartureList> {
   @override
   Widget build(BuildContext context) {
-    return _buildDepartureList(context, widget.departures);
+    return _buildDepartureList(
+        context, widget.departures, widget.geolocationStatus);
+  }
+
+  ListTile _buildItemsForEmptyListView(BuildContext context, int index) {
+    return ListTile(
+      contentPadding: EdgeInsets.only(
+          top: index == 0 ? 16.0 : 2.0, bottom: 2.0, right: 4.0, left: 4.0),
+      title: Text("↻ Pull to Refresh",
+          softWrap: false,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.fade,
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0x66444444))),
+      subtitle: Text(
+          widget.geolocationStatus != GeolocationStatus.granted
+              ? "Enable Location Permissions for NextBus to continue."
+              : "",
+          softWrap: false,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.fade,
+          style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0x66444444))),
+    );
   }
 
   ListTile _buildItemsForListView(BuildContext context, int index) {
@@ -55,6 +85,7 @@ class _DepartureListState extends State<DepartureList> {
             style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
+                fontFamily: "TransitBold",
                 color: transitStyle.textColor)));
   }
 
@@ -83,7 +114,7 @@ class _DepartureListState extends State<DepartureList> {
     }
 
     return Container(
-      padding: EdgeInsets.only(right: 4.0, left: 0.0, top: 0.0),
+      padding: EdgeInsets.only(right: 8.0, left: 0.0, top: 0.0),
       margin: EdgeInsets.all(0),
       width: 70,
       alignment: Alignment.topRight,
@@ -93,12 +124,15 @@ class _DepartureListState extends State<DepartureList> {
     );
   }
 
-  ListView _buildDepartureList(context, List<TransitDeparture> departures) {
+  ListView _buildDepartureList(context, List<TransitDeparture> departures,
+      GeolocationStatus geolocationStatus) {
     return new ListView.separated(
       physics: AlwaysScrollableScrollPhysics(),
       separatorBuilder: (BuildContext context, int index) => Divider(),
-      itemCount: departures != null ? departures.length : 0,
-      itemBuilder: _buildItemsForListView,
+      itemCount: departures != null ? departures.length : 1,
+      itemBuilder: departures != null
+          ? _buildItemsForListView
+          : _buildItemsForEmptyListView,
     );
   }
 }

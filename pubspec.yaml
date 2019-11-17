@@ -19,3 +19,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: TransitBold
+      fonts:
+        - asset: assets/transit-bold.ttf
