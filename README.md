@@ -11,6 +11,7 @@
  - Open Android studio and run on any simulator or device.
 
 <img src="documentation/departure_list.png" width="250" />
+<img src="documentation/android_departure_list.png" width="250" />
 
 ## Possible Future Improvements
 - Ability to save locations to access easily (see design files).
