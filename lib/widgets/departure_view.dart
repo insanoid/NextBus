@@ -16,12 +16,14 @@ class DepartureViewState extends State<DepartureView> {
   List<TransitDeparture> allDepartures;
   Timer timer;
   GeolocationStatus geolocationStatus;
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     final headerTitleStyle = TextStyle(
         fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xff000000), fontFamily: "TransitBold",);
     return new Scaffold(
+      key: _scaffoldKey,
       appBar: new AppBar(
         title: new Text("NextBus", style: headerTitleStyle),
         backgroundColor: Color(0xffFBE352),
@@ -65,11 +67,21 @@ class DepartureViewState extends State<DepartureView> {
     setState(() {
       if (result.runtimeType == NetworkError) {
         print(result.message);
+        showErrorSnackbar();
         // @TODO: Handle network errors better.
       } else {
         this.allDepartures = result;
       }
     });
+  }
+
+  void showErrorSnackbar() {
+    _scaffoldKey.currentState.showSnackBar(new SnackBar(content: new Text("Unable to get nearby stops due to API problems."), action: SnackBarAction(
+      label: 'Retry',
+      onPressed: () {
+        _refreshDepartures();
+      },
+    ),));
   }
 
   void _showLocationDialog() {

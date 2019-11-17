@@ -55,8 +55,8 @@ class _DepartureListState extends State<DepartureList> {
     final currentDeparture = widget.departures[index];
     final departureTitle =
         "${currentDeparture.name} · ${currentDeparture.direction}";
-    final distanceText = currentDeparture.stop.distance == null
-        ? "${currentDeparture.stop.formattedDistanceString()}"
+    final distanceText = currentDeparture.stop.distance != null
+        ? "(${currentDeparture.stop.formattedDistanceString()})"
         : "";
     final subTitle = "${currentDeparture.stopName} $distanceText";
     return ListTile(
@@ -128,6 +128,8 @@ class _DepartureListState extends State<DepartureList> {
 
   ListView _buildDepartureList(context, List<TransitDeparture> departures,
       GeolocationStatus geolocationStatus) {
+    // We need it to be null to make sure empty view is being shown when nothing is there.
+    departures = departures == null || departures.length == 0 ? null : departures;
     return new ListView.separated(
       physics: AlwaysScrollableScrollPhysics(),
       separatorBuilder: (BuildContext context, int index) => Divider(),
