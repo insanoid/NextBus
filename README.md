@@ -10,10 +10,9 @@
  - Run `flutter pub get` to install packages used in the projects.
  - Open Android studio and run on any simulator or device.
 
-<tr>
- <td><img src="documentation/departure_list.png" width="250" /></td>
- <td><img src="documentation/android_departure_list.jpg" width="250" /></td>
-</tr>
+iOS App  | Android App
+------------- | -------------
+<img src="documentation/departure_list.png" width="250" /> | <img src="documentation/android_departure_list.jpg" width="250" />
 
 
 
