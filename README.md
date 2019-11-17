@@ -12,7 +12,7 @@
 
 iOS App  | Android App
 ------------- | -------------
-<img src="documentation/departure_list.png" width="250" /> | <img src="documentation/android_departure_list.jpg" width="250" />
+<img src="documentation/departure_list.png" width="250" /> | <img src="documentation/android_departure_list.jpg" width="200" />
 
 
 
