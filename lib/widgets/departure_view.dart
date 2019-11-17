@@ -76,6 +76,7 @@ class DepartureViewState extends State<DepartureView> {
   }
 
   void showErrorSnackbar() {
+    _scaffoldKey.currentState.hideCurrentSnackBar();
     _scaffoldKey.currentState.showSnackBar(new SnackBar(content: new Text("Unable to get nearby stops due to API problems."), action: SnackBarAction(
       label: 'Retry',
       onPressed: () {
