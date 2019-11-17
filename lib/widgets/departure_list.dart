@@ -105,12 +105,14 @@ class _DepartureListState extends State<DepartureList> {
 
     var departureTimeTextElements = List<Widget>();
     // First
-    departureTimeTextElements.add(Text(formattedDepartureTime.first,
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)));
-    for (String departureTime
-        in formattedDepartureTime.sublist(1, formattedDepartureTime.length)) {
-      departureTimeTextElements.add(Text(departureTime,
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)));
+    if(formattedDepartureTime.length > 0) {
+      departureTimeTextElements.add(Text(formattedDepartureTime.first,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)));
+      for (String departureTime
+      in formattedDepartureTime.sublist(1, formattedDepartureTime.length)) {
+        departureTimeTextElements.add(Text(departureTime,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)));
+      }
     }
 
     return Container(
