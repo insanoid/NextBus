@@ -3,11 +3,12 @@ description: A new Flutter project.
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: ">=2.2.2 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  geolocator: ^5.1.5
   cupertino_icons: ^0.1.2
   dio: ^3.0.0
   dio_flutter_transformer: ^3.0.2

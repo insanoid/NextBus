@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:next_bus/models/transport_departure.dart';
-import 'package:next_bus/models/transport_styling.dart';
+import 'package:next_bus/models/transit_departure.dart';
+import 'package:next_bus/models/transit_style.dart';
 
+// A UI to show the list of departures with pull-to-refresh feature.
 class DepartureList extends StatefulWidget {
-
   DepartureList({Key key, this.departures}) : super(key: key);
 
-  final List<TransportDeparture> departures;
+  final List<TransitDeparture> departures;
 
   @override
   State<StatefulWidget> createState() {
@@ -14,8 +14,8 @@ class DepartureList extends StatefulWidget {
   }
 }
 
+// State to store information regarding departure list.
 class _DepartureListState extends State<DepartureList> {
-
   @override
   Widget build(BuildContext context) {
     return _buildDepartureList(context, widget.departures);
@@ -23,50 +23,68 @@ class _DepartureListState extends State<DepartureList> {
 
   ListTile _buildItemsForListView(BuildContext context, int index) {
     final currentDeparture = widget.departures[index];
+    final departureTitle =
+        "${currentDeparture.name} · ${currentDeparture.direction}";
+    final distanceText = currentDeparture.stop.distance == null
+        ? "${currentDeparture.stop.formattedDistanceString()}"
+        : "";
+    final subTitle = "${currentDeparture.stopName} $distanceText";
     return ListTile(
-        title: Text("${currentDeparture.name} · ${currentDeparture.direction}",
+        contentPadding: EdgeInsets.only(
+            top: index == 0 ? 16.0 : 2.0, bottom: 2.0, right: 4.0, left: 4.0),
+        title: Text(departureTitle,
+            softWrap: false,
+            overflow: TextOverflow.fade,
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        leading: _buildLeadingTile(currentDeparture),
-        trailing: _buildTrailingTile(currentDeparture.nextDepartures()),
-        subtitle: Text(
-            "${currentDeparture.stopName} (${currentDeparture.stop.distance !=
-                null ? currentDeparture.stop.humanReadableDistance() : "N/A"})",
-            style: TextStyle(fontSize: 16)));
+        leading: _buildTransitIconTile(currentDeparture),
+        trailing: _buildTransitDepartureTimeTile(currentDeparture),
+        subtitle: Text(subTitle, style: TextStyle(fontSize: 16)));
   }
 
-  Widget _buildLeadingTile(TransportDeparture departure) {
-    final transportStyling = TransportStyling.fromDeparture(departure);
+  // BVG themed tile of the public transport type.
+  Widget _buildTransitIconTile(TransitDeparture departure) {
+    final transitStyle = TransitStyle.fromDeparture(departure);
     return Container(
-        padding: EdgeInsets.only(right: 8.0, left: 8.0),
+        padding: EdgeInsets.all(4.0),
+        margin: EdgeInsets.only(left: 2.0, right: 2.0),
         width: 40,
         height: 40,
         alignment: Alignment.center,
-        color: transportStyling.backgroundColor,
-        child: Text(transportStyling.shortForm,
+        color: transitStyle.backgroundColor,
+        child: Text(transitStyle.shortForm,
             style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: transportStyling.textColor)));
+                color: transitStyle.textColor)));
   }
 
-  Widget _buildTrailingTile(List<int> departureTimes) {
-    var formattedDepartureTime = departureTimes
-        .map((departureTime) =>
-    departureTime <= 0 ? "Now" : "$departureTime min")
-        .toList();
+  // Transit departure time with the first time being bigger than other 2 (max 3).
+  Widget _buildTransitDepartureTimeTile(TransitDeparture departure) {
+    List<int> departureTimes = departure.nextDepartures();
+    var formattedDepartureTime = List();
+    for (int time in departureTimes) {
+      // If time is less than zero, we don't even consider.
+      if (time < 0) {
+        continue;
+      }
+      time == 0
+          ? formattedDepartureTime.add("Now")
+          : formattedDepartureTime.add("$time min");
+    }
+
     var departureTimeTextElements = List<Widget>();
+    // First
     departureTimeTextElements.add(Text(formattedDepartureTime.first,
-        textAlign: TextAlign.right,
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)));
-    for (String departureTime in formattedDepartureTime.sublist(
-        1, formattedDepartureTime.length)) {
+    for (String departureTime
+        in formattedDepartureTime.sublist(1, formattedDepartureTime.length)) {
       departureTimeTextElements.add(Text(departureTime,
-          textAlign: TextAlign.right,
           style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)));
     }
 
     return Container(
-      padding: EdgeInsets.only(right: 8.0, left: 8.0, top: 4.0),
+      padding: EdgeInsets.only(right: 4.0, left: 0.0, top: 0.0),
+      margin: EdgeInsets.all(0),
       width: 70,
       alignment: Alignment.topRight,
       child: Column(
@@ -75,8 +93,7 @@ class _DepartureListState extends State<DepartureList> {
     );
   }
 
-
-  ListView _buildDepartureList(context, List<TransportDeparture> departures) {
+  ListView _buildDepartureList(context, List<TransitDeparture> departures) {
     return new ListView.separated(
       physics: AlwaysScrollableScrollPhysics(),
       separatorBuilder: (BuildContext context, int index) => Divider(),

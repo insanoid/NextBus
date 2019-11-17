@@ -15,5 +15,4 @@ class NetworkError {
         requestURL: response.request.uri,
         response: response);
   }
-
 }
