@@ -22,10 +22,7 @@ class _DepartureListState extends State<DepartureList> {
   }
 
   ListTile _buildItemsForListView(BuildContext context, int index) {
-    print(widget.departures.length);
-    print(index);
     final currentDeparture = widget.departures[index];
-    print(currentDeparture);
     return ListTile(
         title: Text("${currentDeparture.name} · ${currentDeparture.direction}",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -57,7 +54,6 @@ class _DepartureListState extends State<DepartureList> {
         .map((departureTime) =>
     departureTime <= 0 ? "Now" : "$departureTime min")
         .toList();
-    print(departureTimes);
     var departureTimeTextElements = List<Widget>();
     departureTimeTextElements.add(Text(formattedDepartureTime.first,
         textAlign: TextAlign.right,

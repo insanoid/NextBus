@@ -74,7 +74,6 @@ class TransportDepartureList {
       currentDeparture.when.add(departure.when.first);
       groupedDepartures[key] = currentDeparture;
     }
-    print(groupedDepartures);
     return groupedDepartures.values.toList();
   }
 

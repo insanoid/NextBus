@@ -28,7 +28,6 @@ class DepartureViewState extends State<DepartureView> {
 
     BVGAPIClient.getRelevantDepartures(52.46533, 13.2801013).then((result) {
       setState(() {
-        print("------------>>>>>> $result");
         if (result.runtimeType == NetworkError) {
           print(result.message);
           // Handle network errors better?

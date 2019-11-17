@@ -78,8 +78,6 @@ class BVGAPIClient {
       return nearbyStops;
     }
 
-    print("Stops Fetched: $nearbyStops");
-
     Map<String, TransportDeparture> allDepartures = Map();
 
     for(TransportStop stop in nearbyStops) {
