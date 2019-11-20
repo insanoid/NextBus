@@ -14,12 +14,11 @@ iOS App  | Android App
 ------------- | -------------
 <img src="documentation/departure_list.png" width="250" /> | <img src="documentation/android_departure_list.jpg" width="200" />
 
-
-
-## Possible Future Improvements
+## Future Improvements
 - Ability to save locations to access easily (see design files).
 - Ability to pin a transit route as favorite so it shows up on top of the list if it's one of the departure options.
-- Better error handling to ensure user is notified if the API is failing.
-- Preferences to switch between metric and imperial units.
+- Better error handling to ensure user is notified if the API is failing (when only some requests are failing)
+- Preferences: To switch between metric and imperial units, refresh duration, distance to consider, maximum stops to consider.
 - Multiple language support (starting with German).
 - Basic tests for the UI, API, and models.
+- Parallel API requests to fetch departure information.

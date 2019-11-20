@@ -12,7 +12,10 @@ class TransitStop {
   // Lines of transit that pass through this stop.
   final List<dynamic> transitLines;
 
-  TransitStop({this.id, this.name, this.distance, this.transitLines});
+  // Coordinates for the transit.
+  final double latitude, longitude;
+
+  TransitStop({this.id, this.name, this.distance, this.transitLines, this.latitude, this.longitude});
 
   factory TransitStop.fromJson(Map<String, dynamic> json) {
     // We save the various lines passing through this stop.
@@ -24,6 +27,8 @@ class TransitStop {
         id: json["id"],
         name: json["name"],
         distance: json["distance"],
+        latitude: json["location"]["latitude"],
+        longitude: json["location"]["longitude"],
         transitLines: lines);
   }
 

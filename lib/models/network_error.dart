@@ -16,4 +16,9 @@ class NetworkError {
         requestURL: response.request.uri,
         response: response);
   }
+
+  // Description string printer for easy debugging.
+  String description() {
+    return "$headerCode - $requestURL - $message";
+  }
 }

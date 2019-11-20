@@ -17,44 +17,71 @@ class DepartureViewState extends State<DepartureView> {
   Timer timer;
   GeolocationStatus geolocationStatus;
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  bool isLoading;
+
+  Widget get _loadingView {
+    return new Center(
+      child: new CircularProgressIndicator(backgroundColor: Color(0xffFBE352), valueColor: AlwaysStoppedAnimation(Color(0xff000000))),
+    );
+  }
+
+  Widget get _container {
+    return new Container(
+      child: new Center(
+          child: new RefreshIndicator(
+            backgroundColor: Color(0xffFBE352),
+            color: Color(0xff000000),
+            child: new DepartureList(
+                departures: allDepartures, geolocationStatus: geolocationStatus),
+            onRefresh: _refreshDepartures,
+          )),
+    );
+  }
+
+
+  Widget get _pageToDisplay {
+    if (isLoading) {
+      return _loadingView;
+    } else {
+      return _container;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final headerTitleStyle = TextStyle(
-        fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xff000000), fontFamily: "TransitBold",);
+      fontSize: 24,
+      fontWeight: FontWeight.bold,
+      color: Color(0xff000000),
+      fontFamily: "TransitBold",
+    );
     return new Scaffold(
       key: _scaffoldKey,
       appBar: new AppBar(
         title: new Text("NextBus", style: headerTitleStyle),
         backgroundColor: Color(0xffFBE352),
       ),
-      body: new Container(
-        child: new Center(
-            child: new RefreshIndicator(
-          backgroundColor: Color(0xffFBE352),
-          color: Color(0xff000000),
-          child: new DepartureList(
-              departures: allDepartures, geolocationStatus: geolocationStatus),
-          onRefresh: _refreshDepartures,
-        )),
-      ),
+      body: _pageToDisplay,
     );
   }
 
   @override
   void initState() {
     super.initState();
+    // Timer to constantly refresh the
     timer = Timer.periodic(
-        Duration(seconds: 120), (Timer t) => _refreshDepartures());
+        Duration(seconds: 60), (Timer t) => _refreshDepartures());
     _refreshDepartures();
   }
 
   Future<Null> _refreshDepartures() async {
+    isLoading = true;
     debugPrint('Refreshing departures...');
     geolocationStatus = await Geolocator().checkGeolocationPermissionStatus();
 
     if (geolocationStatus == GeolocationStatus.denied) {
       _showLocationDialog();
+      isLoading = false;
       debugPrint("No location permission available.");
       return;
     }
@@ -65,8 +92,9 @@ class DepartureViewState extends State<DepartureView> {
     var result = await BVGAPIClient.getDeparturesNearby(
         position.latitude, position.longitude);
     setState(() {
+      isLoading = false;
       if (result.runtimeType == NetworkError) {
-        print(result.message);
+        debugPrint(result.description());
         showErrorSnackbar();
         // @TODO: Handle network errors better.
       } else {
@@ -77,12 +105,15 @@ class DepartureViewState extends State<DepartureView> {
 
   void showErrorSnackbar() {
     _scaffoldKey.currentState.hideCurrentSnackBar();
-    _scaffoldKey.currentState.showSnackBar(new SnackBar(content: new Text("Unable to get nearby stops due to API problems."), action: SnackBarAction(
-      label: 'Retry',
-      onPressed: () {
-        _refreshDepartures();
-      },
-    ),));
+    _scaffoldKey.currentState.showSnackBar(new SnackBar(
+      content: new Text("Unable to get nearby stops due to API problems."),
+      action: SnackBarAction(
+        label: 'Retry',
+        onPressed: () {
+          _refreshDepartures();
+        },
+      ),
+    ));
   }
 
   void _showLocationDialog() {

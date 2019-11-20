@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:next_bus/models/transit_departure.dart';
+import 'package:next_bus/models/transit_stop.dart';
 import 'package:next_bus/models/transit_style.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // A UI to show the list of departures with pull-to-refresh feature.
 class DepartureList extends StatefulWidget {
@@ -38,14 +40,14 @@ class _DepartureListState extends State<DepartureList> {
               fontWeight: FontWeight.bold,
               color: Color(0x66444444))),
       subtitle: Text(
-          widget.geolocationStatus != GeolocationStatus.granted
+          widget.geolocationStatus != null && widget.geolocationStatus != GeolocationStatus.granted
               ? "Enable Location Permissions for NextBus to continue."
               : "",
           softWrap: false,
           textAlign: TextAlign.center,
           overflow: TextOverflow.fade,
           style: TextStyle(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: Color(0x66444444))),
     );
@@ -68,7 +70,8 @@ class _DepartureListState extends State<DepartureList> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         leading: _buildTransitIconTile(currentDeparture),
         trailing: _buildTransitDepartureTimeTile(currentDeparture),
-        subtitle: Text(subTitle, style: TextStyle(fontSize: 16)));
+        subtitle: Text(subTitle, style: TextStyle(fontSize: 16)),
+        onTap: () => _openMap(currentDeparture.stop),);
   }
 
   // BVG themed tile of the public transport type.
@@ -139,4 +142,21 @@ class _DepartureListState extends State<DepartureList> {
           : _buildItemsForEmptyListView,
     );
   }
+
+  _openMap(TransitStop stop) async {
+    // Android
+    var url = "geo:${stop.latitude},${stop.longitude}";
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      // If it's iOS then open apple maps.
+      var url = "http://maps.apple.com/?ll=${stop.latitude},${stop.longitude}";
+      if (await canLaunch(url)) {
+        await launch(url);
+      } else {
+        throw "Could not launch $url";
+      }
+    }
+  }
+
 }
