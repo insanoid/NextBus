@@ -13,6 +13,7 @@ dependencies:
   cupertino_icons: ^0.1.2
   dio: ^3.0.0
   dio_flutter_transformer: ^3.0.2
+  location_permissions: ^2.0.3
 
 dev_dependencies:
   flutter_test:

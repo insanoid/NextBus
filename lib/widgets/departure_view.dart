@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:location_permissions/location_permissions.dart';
 import 'package:next_bus/models/network_error.dart';
 import 'package:next_bus/models/transit_departure.dart';
 import 'package:next_bus/network/api_client.dart';
@@ -21,7 +22,9 @@ class DepartureViewState extends State<DepartureView> {
 
   Widget get _loadingView {
     return new Center(
-      child: new CircularProgressIndicator(backgroundColor: Color(0xffFBE352), valueColor: AlwaysStoppedAnimation(Color(0xff000000))),
+      child: new CircularProgressIndicator(
+          backgroundColor: Color(0xffFBE352),
+          valueColor: AlwaysStoppedAnimation(Color(0xff000000))),
     );
   }
 
@@ -29,15 +32,14 @@ class DepartureViewState extends State<DepartureView> {
     return new Container(
       child: new Center(
           child: new RefreshIndicator(
-            backgroundColor: Color(0xffFBE352),
-            color: Color(0xff000000),
-            child: new DepartureList(
-                departures: allDepartures, geolocationStatus: geolocationStatus),
-            onRefresh: _refreshDepartures,
-          )),
+        backgroundColor: Color(0xffFBE352),
+        color: Color(0xff000000),
+        child: new DepartureList(
+            departures: allDepartures, geolocationStatus: geolocationStatus),
+        onRefresh: () => _refreshDepartures(true),
+      )),
     );
   }
-
 
   Widget get _pageToDisplay {
     if (isLoading) {
@@ -68,55 +70,94 @@ class DepartureViewState extends State<DepartureView> {
   @override
   void initState() {
     super.initState();
-    // Timer to constantly refresh the
-    timer = Timer.periodic(
-        Duration(seconds: 60), (Timer t) => _refreshDepartures());
-    _refreshDepartures();
+    _refreshDepartures(false);
   }
 
-  Future<Null> _refreshDepartures() async {
-    isLoading = true;
-    debugPrint('Refreshing departures...');
-    geolocationStatus = await Geolocator().checkGeolocationPermissionStatus();
+  void restartTimer() {
+    killTimer();
+    timer = Timer.periodic(
+        Duration(seconds: 60), (Timer t) => _refreshDepartures(false));
+  }
 
-    if (geolocationStatus == GeolocationStatus.denied) {
-      _showLocationDialog();
-      isLoading = false;
-      debugPrint("No location permission available.");
-      return;
+  void killTimer() {
+    if(timer != null) {
+      timer.cancel();
+      timer = null;
     }
-    Position position = await Geolocator()
-        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    debugPrint("Found Location: $position");
+  }
 
-    var result = await BVGAPIClient.getDeparturesNearby(
-        position.latitude, position.longitude);
+  Future<Null> _refreshDepartures(bool isPullToRefresh) async {
+    setState(() {
+      // If it's not pull to refresh we need to show the refresh in the UI.
+      if (!isPullToRefresh) {
+        isLoading = true;
+      }
+    });
+    debugPrint('Refreshing departures...');
+
+    Geolocator().checkGeolocationPermissionStatus().then((result) {
+      debugPrint("Current Location Permission: $result");
+      // If the status is already set to denied we just show the warning and stop.
+      if (result == GeolocationStatus.denied) {
+        _handleLocationFailure(null);
+        return;
+      }
+        // This callback fails if the permission dialog is presented and the user selects denied.
+        // It throws an exception, when that happens we just show the warning and stop.
+        Geolocator()
+            .getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+            .then(_newPosition).catchError(_handleLocationFailure);
+    });
+  }
+
+  // When the location is updated trigger this function to get/refresh departures.
+  void _newPosition(position) {
+    debugPrint("Found Location: $position");
+    // Restart timer here; If the user manually refreshed the list we do not need to trigger it again for the refresh duration.
+    restartTimer();
+    BVGAPIClient.getDeparturesNearby(position.latitude, position.longitude)
+        .then(_handleNewDepartureList);
+  }
+
+  // When we have a new list of departures/error trigger this function to update the UI.
+  void _handleNewDepartureList(response) {
     setState(() {
       isLoading = false;
-      if (result.runtimeType == NetworkError) {
-        debugPrint(result.description());
-        showErrorSnackbar();
+      if (response.runtimeType == NetworkError) {
+        debugPrint(response.description());
+        showErrorSnackBar();
         // @TODO: Handle network errors better.
       } else {
-        this.allDepartures = result;
+        this.allDepartures = response;
       }
     });
   }
 
-  void showErrorSnackbar() {
+  void _handleLocationFailure(Object error) {
+    // We do not want to keep restarting the location check if it failed once, needs to be manually triggered.
+    // Avoids spawning multiple error dialogs.
+    killTimer();
+    _showLocationPermissionErrorDialog();
+    setState(() {
+      isLoading = false;
+      debugPrint("No location permission available.");
+    });
+  }
+
+  void showErrorSnackBar() {
     _scaffoldKey.currentState.hideCurrentSnackBar();
     _scaffoldKey.currentState.showSnackBar(new SnackBar(
       content: new Text("Unable to get nearby stops due to API problems."),
       action: SnackBarAction(
         label: 'Retry',
         onPressed: () {
-          _refreshDepartures();
+          _refreshDepartures(false);
         },
       ),
     ));
   }
 
-  void _showLocationDialog() {
+  void _showLocationPermissionErrorDialog() {
     // @TODO: add a link to go to settings.
     showDialog(
       context: context,
@@ -132,6 +173,12 @@ class DepartureViewState extends State<DepartureView> {
               child: new Text("Close"),
               onPressed: () {
                 Navigator.of(context).pop();
+              },
+            ),
+            new FlatButton(
+              child: new Text("Open Permissions"),
+              onPressed: () {
+                LocationPermissions().openAppSettings();
               },
             ),
           ],
