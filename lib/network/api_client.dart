@@ -17,8 +17,7 @@ class APIMethods {
   }
 }
 
-const int DeparturesWithinDuration = 60;
-const int MaximumStopsToConsider = 4;
+const int DeparturesWithinDuration = 60; // in minutes.
 
 // API Client for all BVG related queries to be used as a singleton.
 class BVGAPIClient {

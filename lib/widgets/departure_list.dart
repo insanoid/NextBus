@@ -12,8 +12,11 @@ class DepartureList extends StatefulWidget {
       {Key key, this.departures, this.geolocationStatus, this.responseStatus})
       : super(key: key);
 
+  // Stores the list of all departures previously fetched.
   final List<TransitDeparture> departures;
+  // Status of the Location API Permission.
   GeolocationStatus geolocationStatus;
+  // Response from the last request to fetch departures (important in case of no stops/departures).
   ResponseStatus responseStatus;
 
   @override
@@ -143,8 +146,7 @@ class _DepartureListState extends State<DepartureList> {
   ListView _buildDepartureList(context, List<TransitDeparture> departures,
       GeolocationStatus geolocationStatus) {
     // We need it to be null to make sure empty view is being shown when nothing is there.
-    departures =
-        departures == null || departures.length == 0 ? null : departures;
+    departures = departures.length == 0 ? null : departures;
     return new ListView.separated(
       physics: AlwaysScrollableScrollPhysics(),
       separatorBuilder: (BuildContext context, int index) => Divider(),
