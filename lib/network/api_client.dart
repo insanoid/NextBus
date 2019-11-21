@@ -69,67 +69,86 @@ class BVGAPIClient {
   }
 
   // get all the departures nearby with the only the closest stop for each transit line.
-  static Future getDeparturesNearby(double latitude, double longitude) async {
+  static Future getDeparturesNearby(
+      double latitude, double longitude) async {
     // First we fetch all stops that are nearby and have unique lines.
     var stopsResult = await _getStops(latitude, longitude, onlyNeeded: true);
+
+    // If an error happens at this stage, there is nothing we can do but tell the user to try again.
     if (stopsResult.runtimeType == NetworkError) {
       debugPrint("Failed Fetching Stops: ${stopsResult.requestURL}");
       return MultipleRequestResponse(
           status: ResponseStatus.Failure, response: null, error: stopsResult);
     }
 
+    // So now we have the list of stops, now we start getting departures for these stops.
     Map<String, TransitDeparture> allDepartures = Map();
+    // Since there are multiple requests some might fail and some might work
+    // We need to know if some failed to tell the user that the information he is shown might be incomplete.
     bool hasErrorsOccurred = false;
-    bool hasSuccessOccurred =
-        false; // there might be stops but with no departures so we need to keep track of success.
+    // There might be stops but with no departures so we need to keep track of success.
+    bool hasSuccessOccurred = false;
 
-    var numberOfStopsAdded = 0;
-    // Go through each stop, get departures for the stop.
-    // Add unique routes for the given stop.
-    // As the stops are sorted by distance the first stop with line is always the closest access to the line.
+    // Since the departure response's stop data is not complete we need to keep a map of stop ID to stop data so we can use it later.
+    Map<String, TransitStop> stopMap = new Map();
+    List<Future> stopRequestList = new List();
     for (TransitStop stop in stopsResult) {
-      debugPrint("Departures For: ${stop.name}");
+      stopMap[stop.id] = stop;
+      stopRequestList.add(_getDepartures(stop.id));
+    }
+    debugPrint("Total Stops to Fetch: ${stopMap.length}");
+    try {
+      // Now we try all the async requests in parallel.
+      // Some requests might come in early and some might come in late - distance sequence is no longer kept.
+      List responses = await Future.wait(stopRequestList);
 
-      var departureResult = await _getDepartures(stop.id);
-      if (departureResult.runtimeType == NetworkError) {
-        debugPrint("Failed Fetching Departure: ${departureResult.requestURL}");
-        hasErrorsOccurred = true;
-        continue;
-      }
+      for (var departureResult in responses) {
+        // If there was a network error in one of the response we cannot do much about it but we can track it.
+        if (departureResult.runtimeType == NetworkError) {
+          debugPrint(
+              "Failed Fetching Departure: ${departureResult.requestURL}");
+          hasErrorsOccurred = true;
+          continue;
+        }
+        hasSuccessOccurred = true;
+        for (TransitDeparture departure in departureResult) {
+          // We add departures to the list only if that line does not already have a departure from a stop closer to the user.
+          if (departure.nextDepartures().length > 0) {
+            var key = "${departure.name}/${departure.direction}";
 
-      hasSuccessOccurred = true;
-      bool addedDeparturesFromStop = false;
-      for (TransitDeparture departure in departureResult) {
-        // Add only departures which have not been previously added to the list.
-        // We consider one transit line only once (i.e. from the nearest stop).
-        if (departure.nextDepartures().length > 0) {
-          var key = "${departure.name}/${departure.direction}";
-          // Save the stop details in the departure object as it is used to show distance from the user's location.
-          departure.stop = stop;
-          allDepartures.putIfAbsent(key, () => departure);
-          addedDeparturesFromStop = true;
+            // Save the stop details in the departure object as it is used to show distance from the user's location.
+            departure.stop = stopMap[departure.stop.id];
+            var currentValue = allDepartures[key];
+            // If the departure is not in the list OR it's from a stop closer to the user - save/replace it.
+            if (currentValue == null ||
+                currentValue.stop.distance > departure.stop.distance) {
+              allDepartures[key] = departure;
+            }
+          }
         }
       }
 
-      if (addedDeparturesFromStop) {
-        numberOfStopsAdded++;
+      ResponseStatus status = ResponseStatus
+          .OK; // if no error occurred and only success OR no error or success.
+      if (hasSuccessOccurred && hasErrorsOccurred) {
+        status = ResponseStatus.OKWithSomeFailures;
+      } else if (!hasSuccessOccurred && hasErrorsOccurred) {
+        status = ResponseStatus.Failure;
       }
-      // We only consider the first few stops since we do not want to overburden the user with information.
-      if (numberOfStopsAdded >= MaximumStopsToConsider) {
-        debugPrint("Stopping: Maximum Stops To Consider Limit Reached.");
-        break;
-      }
+      // We do not use the error, so we can always pass it as null for the time being.
+      // If we do not have any departures or any stops a blank array is passed.
+
+      var departureList = allDepartures.values.toList();
+      // We sort the list by distance just to make sure nearest departures are shown first.
+      departureList.sort((departure1, departure2) =>
+          departure1.stop.distance.compareTo(departure2.stop.distance));
+      return new MultipleRequestResponse(
+          status: status, response: departureList, error: null);
+    } catch (e) {
+      debugPrint(
+          "Something horribly went wrong. This error should never happen!");
+      return new MultipleRequestResponse(
+          status: ResponseStatus.Failure, response: null, error: null);
     }
-    ResponseStatus status = ResponseStatus
-        .OK; // if no error occurred and only success OR no error or success.
-    if (hasSuccessOccurred && hasErrorsOccurred) {
-      status = ResponseStatus.OKWithSomeFailures;
-    } else if (!hasSuccessOccurred && hasErrorsOccurred) {
-      status = ResponseStatus.Failure;
-    }
-    // We do not use the error, so we can always pass it as null for the time being.
-    // If we do not have any departures or any stops a blank array is passed.
-    return new MultipleRequestResponse(
-        status: status, response: allDepartures.values.toList(), error: null);
   }
 }
