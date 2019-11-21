@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:location_permissions/location_permissions.dart';
 import 'package:next_bus/models/network_error.dart';
@@ -77,47 +78,41 @@ class DepartureViewState extends State<DepartureView> {
     killTimer();
     timer = Timer.periodic(
         Duration(seconds: 60), (Timer t) => _refreshDepartures(false));
+    debugPrint("Timer Restarted");
   }
 
   void killTimer() {
-    if(timer != null) {
+    if (timer != null) {
+      debugPrint("Timer Killed");
       timer.cancel();
       timer = null;
     }
   }
 
   Future<Null> _refreshDepartures(bool isPullToRefresh) async {
-    setState(() {
-      // If it's not pull to refresh we need to show the refresh in the UI.
-      if (!isPullToRefresh) {
+    if (!isPullToRefresh) {
+      setState(() {
+        // If it's not pull to refresh we need to show the refresh in the UI.
         isLoading = true;
-      }
-    });
+      });
+    }
     debugPrint('Refreshing departures...');
-
-    Geolocator().checkGeolocationPermissionStatus().then((result) {
-      debugPrint("Current Location Permission: $result");
-      // If the status is already set to denied we just show the warning and stop.
-      if (result == GeolocationStatus.denied) {
-        _handleLocationFailure(null);
-        return;
-      }
-        // This callback fails if the permission dialog is presented and the user selects denied.
-        // It throws an exception, when that happens we just show the warning and stop.
-        Geolocator()
-            .getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
-            .then(_newPosition).catchError(_handleLocationFailure);
-    });
-  }
-
-  // When the location is updated trigger this function to get/refresh departures.
-  void _newPosition(position) {
+    // This callback fails if the permission dialog is presented and the user selects denied.
+    // It throws an exception, when that happens we just show the warning and stop.
+    Position position = await Geolocator()
+        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high).catchError(_handleLocationFailure);
+    if (position == null) {
+      // the error block will handle fixing UI.
+      return;
+    }
+    geolocationStatus = GeolocationStatus.granted;
     debugPrint("Found Location: $position");
     // Restart timer here; If the user manually refreshed the list we do not need to trigger it again for the refresh duration.
     restartTimer();
-    BVGAPIClient.getDeparturesNearby(position.latitude, position.longitude)
-        .then(_handleNewDepartureList);
+    var response = await BVGAPIClient.getDeparturesNearby(position.latitude, position.longitude);
+    _handleNewDepartureList(response);
   }
+
 
   // When we have a new list of departures/error trigger this function to update the UI.
   void _handleNewDepartureList(response) {
@@ -137,6 +132,7 @@ class DepartureViewState extends State<DepartureView> {
     // We do not want to keep restarting the location check if it failed once, needs to be manually triggered.
     // Avoids spawning multiple error dialogs.
     killTimer();
+    geolocationStatus = GeolocationStatus.denied;
     _showLocationPermissionErrorDialog();
     setState(() {
       isLoading = false;
@@ -179,6 +175,7 @@ class DepartureViewState extends State<DepartureView> {
               child: new Text("Open Permissions"),
               onPressed: () {
                 LocationPermissions().openAppSettings();
+                Navigator.of(context).pop();
               },
             ),
           ],
