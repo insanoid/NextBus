@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:dio_flutter_transformer/dio_flutter_transformer.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:next_bus/models/multiple_request_response.dart';
 import 'package:next_bus/models/transit_departure.dart';
 import 'package:next_bus/models/transit_stop.dart';
+
 import '../models/network_error.dart';
 
 // A class to store all the API method and URL strings.
@@ -72,10 +74,14 @@ class BVGAPIClient {
     var stopsResult = await _getStops(latitude, longitude, onlyNeeded: true);
     if (stopsResult.runtimeType == NetworkError) {
       debugPrint("Failed Fetching Stops: ${stopsResult.requestURL}");
-      return stopsResult;
+      return MultipleRequestResponse(
+          status: ResponseStatus.Failure, response: null, error: stopsResult);
     }
 
     Map<String, TransitDeparture> allDepartures = Map();
+    bool hasErrorsOccurred = false;
+    bool hasSuccessOccurred =
+        false; // there might be stops but with no departures so we need to keep track of success.
 
     var numberOfStopsAdded = 0;
     // Go through each stop, get departures for the stop.
@@ -86,11 +92,12 @@ class BVGAPIClient {
 
       var departureResult = await _getDepartures(stop.id);
       if (departureResult.runtimeType == NetworkError) {
-        // @TODO: We should accumulate the errors in the future and show somethings didn't work out to the user.
         debugPrint("Failed Fetching Departure: ${departureResult.requestURL}");
+        hasErrorsOccurred = true;
         continue;
       }
 
+      hasSuccessOccurred = true;
       bool addedDeparturesFromStop = false;
       for (TransitDeparture departure in departureResult) {
         // Add only departures which have not been previously added to the list.
@@ -113,6 +120,16 @@ class BVGAPIClient {
         break;
       }
     }
-    return allDepartures.values.toList();
+    ResponseStatus status = ResponseStatus
+        .OK; // if no error occurred and only success OR no error or success.
+    if (hasSuccessOccurred && hasErrorsOccurred) {
+      status = ResponseStatus.OKWithSomeFailures;
+    } else if (!hasSuccessOccurred && hasErrorsOccurred) {
+      status = ResponseStatus.Failure;
+    }
+    // We do not use the error, so we can always pass it as null for the time being.
+    // If we do not have any departures or any stops a blank array is passed.
+    return new MultipleRequestResponse(
+        status: status, response: allDepartures.values.toList(), error: null);
   }
 }

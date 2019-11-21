@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:location_permissions/location_permissions.dart';
 import 'package:next_bus/models/network_error.dart';
@@ -16,6 +15,7 @@ class DepartureView extends StatefulWidget {
 
 class DepartureViewState extends State<DepartureView> {
   List<TransitDeparture> allDepartures;
+  ResponseStatus lastResponseStatus;
   Timer timer;
   GeolocationStatus geolocationStatus;
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
@@ -36,7 +36,9 @@ class DepartureViewState extends State<DepartureView> {
         backgroundColor: Color(0xffFBE352),
         color: Color(0xff000000),
         child: new DepartureList(
-            departures: allDepartures, geolocationStatus: geolocationStatus),
+            departures: allDepartures,
+            geolocationStatus: geolocationStatus,
+            responseStatus: lastResponseStatus),
         onRefresh: () => _refreshDepartures(true),
       )),
     );
@@ -74,14 +76,14 @@ class DepartureViewState extends State<DepartureView> {
     _refreshDepartures(false);
   }
 
-  void restartTimer() {
-    killTimer();
+  void _restartTimer() {
+    _killTimer();
     timer = Timer.periodic(
-        Duration(seconds: 60), (Timer t) => _refreshDepartures(false));
+        Duration(seconds: 60), (Timer t) => _refreshDepartures(true));
     debugPrint("Timer Restarted");
   }
 
-  void killTimer() {
+  void _killTimer() {
     if (timer != null) {
       debugPrint("Timer Killed");
       timer.cancel();
@@ -89,8 +91,9 @@ class DepartureViewState extends State<DepartureView> {
     }
   }
 
-  Future<Null> _refreshDepartures(bool isPullToRefresh) async {
-    if (!isPullToRefresh) {
+  // Refresh the location and list of departures, if loading state is needed present the loading state while the steps are being completed.
+  Future<Null> _refreshDepartures(bool needsLoadingState) async {
+    if (!needsLoadingState) {
       setState(() {
         // If it's not pull to refresh we need to show the refresh in the UI.
         isLoading = true;
@@ -100,7 +103,8 @@ class DepartureViewState extends State<DepartureView> {
     // This callback fails if the permission dialog is presented and the user selects denied.
     // It throws an exception, when that happens we just show the warning and stop.
     Position position = await Geolocator()
-        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high).catchError(_handleLocationFailure);
+        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+        .catchError(_handleLocationFailure);
     if (position == null) {
       // the error block will handle fixing UI.
       return;
@@ -108,30 +112,32 @@ class DepartureViewState extends State<DepartureView> {
     geolocationStatus = GeolocationStatus.granted;
     debugPrint("Found Location: $position");
     // Restart timer here; If the user manually refreshed the list we do not need to trigger it again for the refresh duration.
-    restartTimer();
-    var response = await BVGAPIClient.getDeparturesNearby(position.latitude, position.longitude);
+    _restartTimer();
+    var response = await BVGAPIClient.getDeparturesNearby(
+        position.latitude, position.longitude);
     _handleNewDepartureList(response);
   }
 
-
   // When we have a new list of departures/error trigger this function to update the UI.
-  void _handleNewDepartureList(response) {
+  void _handleNewDepartureList(multipleRequestResponse) {
     setState(() {
       isLoading = false;
-      if (response.runtimeType == NetworkError) {
-        debugPrint(response.description());
-        showErrorSnackBar();
-        // @TODO: Handle network errors better.
-      } else {
-        this.allDepartures = response;
+      if (multipleRequestResponse.status == ResponseStatus.Failure) {
+        showErrorSnackBar(false);
+        return;
+      } else if (multipleRequestResponse.status ==
+          ResponseStatus.OKWithSomeFailures) {
+        showErrorSnackBar(true);
       }
+      this.allDepartures = multipleRequestResponse.response;
+      this.lastResponseStatus = multipleRequestResponse.status;
     });
   }
 
   void _handleLocationFailure(Object error) {
     // We do not want to keep restarting the location check if it failed once, needs to be manually triggered.
     // Avoids spawning multiple error dialogs.
-    killTimer();
+    _killTimer();
     geolocationStatus = GeolocationStatus.denied;
     _showLocationPermissionErrorDialog();
     setState(() {
@@ -140,10 +146,12 @@ class DepartureViewState extends State<DepartureView> {
     });
   }
 
-  void showErrorSnackBar() {
+  void showErrorSnackBar(bool onlyPartialErrors) {
     _scaffoldKey.currentState.hideCurrentSnackBar();
     _scaffoldKey.currentState.showSnackBar(new SnackBar(
-      content: new Text("Unable to get nearby stops due to API problems."),
+      content: onlyPartialErrors
+          ? new Text("Unable to check all available stops at the moment (API).")
+          : new Text("Unable to get any nearby stops (API)."),
       action: SnackBarAction(
         label: 'Retry',
         onPressed: () {

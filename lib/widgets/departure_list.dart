@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:next_bus/models/network_error.dart';
 import 'package:next_bus/models/transit_departure.dart';
 import 'package:next_bus/models/transit_stop.dart';
 import 'package:next_bus/models/transit_style.dart';
@@ -7,11 +8,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 // A UI to show the list of departures with pull-to-refresh feature.
 class DepartureList extends StatefulWidget {
-  DepartureList({Key key, this.departures, this.geolocationStatus})
+  DepartureList(
+      {Key key, this.departures, this.geolocationStatus, this.responseStatus})
       : super(key: key);
 
   final List<TransitDeparture> departures;
   GeolocationStatus geolocationStatus;
+  ResponseStatus responseStatus;
 
   @override
   State<StatefulWidget> createState() {
@@ -27,6 +30,16 @@ class _DepartureListState extends State<DepartureList> {
         context, widget.departures, widget.geolocationStatus);
   }
 
+  String _subtitleForEmptyState() {
+    if (widget.responseStatus == ResponseStatus.OK) {
+      return "There are no stops or departures near you.";
+    } else if (widget.geolocationStatus != null &&
+        widget.geolocationStatus != GeolocationStatus.granted) {
+      return "Enable Location Permissions for NextBus to continue.";
+    }
+    return "";
+  }
+
   ListTile _buildItemsForEmptyListView(BuildContext context, int index) {
     return ListTile(
       contentPadding: EdgeInsets.only(
@@ -39,10 +52,7 @@ class _DepartureListState extends State<DepartureList> {
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Color(0x66444444))),
-      subtitle: Text(
-          widget.geolocationStatus != null && widget.geolocationStatus != GeolocationStatus.granted
-              ? "Enable Location Permissions for NextBus to continue."
-              : "",
+      subtitle: Text(_subtitleForEmptyState(),
           softWrap: false,
           textAlign: TextAlign.center,
           overflow: TextOverflow.fade,
@@ -62,16 +72,17 @@ class _DepartureListState extends State<DepartureList> {
         : "";
     final subTitle = "${currentDeparture.stopName} $distanceText";
     return ListTile(
-        contentPadding: EdgeInsets.only(
-            top: index == 0 ? 16.0 : 2.0, bottom: 2.0, right: 4.0, left: 4.0),
-        title: Text(departureTitle,
-            softWrap: false,
-            overflow: TextOverflow.fade,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        leading: _buildTransitIconTile(currentDeparture),
-        trailing: _buildTransitDepartureTimeTile(currentDeparture),
-        subtitle: Text(subTitle, style: TextStyle(fontSize: 16)),
-        onTap: () => _openMap(currentDeparture.stop),);
+      contentPadding: EdgeInsets.only(
+          top: index == 0 ? 16.0 : 2.0, bottom: 2.0, right: 4.0, left: 4.0),
+      title: Text(departureTitle,
+          softWrap: false,
+          overflow: TextOverflow.fade,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      leading: _buildTransitIconTile(currentDeparture),
+      trailing: _buildTransitDepartureTimeTile(currentDeparture),
+      subtitle: Text(subTitle, style: TextStyle(fontSize: 16)),
+      onTap: () => _openMap(currentDeparture.stop),
+    );
   }
 
   // BVG themed tile of the public transport type.
@@ -108,11 +119,11 @@ class _DepartureListState extends State<DepartureList> {
 
     var departureTimeTextElements = List<Widget>();
     // First
-    if(formattedDepartureTime.length > 0) {
+    if (formattedDepartureTime.length > 0) {
       departureTimeTextElements.add(Text(formattedDepartureTime.first,
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)));
       for (String departureTime
-      in formattedDepartureTime.sublist(1, formattedDepartureTime.length)) {
+          in formattedDepartureTime.sublist(1, formattedDepartureTime.length)) {
         departureTimeTextElements.add(Text(departureTime,
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)));
       }
@@ -132,7 +143,8 @@ class _DepartureListState extends State<DepartureList> {
   ListView _buildDepartureList(context, List<TransitDeparture> departures,
       GeolocationStatus geolocationStatus) {
     // We need it to be null to make sure empty view is being shown when nothing is there.
-    departures = departures == null || departures.length == 0 ? null : departures;
+    departures =
+        departures == null || departures.length == 0 ? null : departures;
     return new ListView.separated(
       physics: AlwaysScrollableScrollPhysics(),
       separatorBuilder: (BuildContext context, int index) => Divider(),
@@ -158,5 +170,4 @@ class _DepartureListState extends State<DepartureList> {
       }
     }
   }
-
 }

@@ -15,7 +15,13 @@ class TransitStop {
   // Coordinates for the transit.
   final double latitude, longitude;
 
-  TransitStop({this.id, this.name, this.distance, this.transitLines, this.latitude, this.longitude});
+  TransitStop(
+      {this.id,
+      this.name,
+      this.distance,
+      this.transitLines,
+      this.latitude,
+      this.longitude});
 
   factory TransitStop.fromJson(Map<String, dynamic> json) {
     // We save the various lines passing through this stop.

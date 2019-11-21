@@ -22,3 +22,6 @@ class NetworkError {
     return "$headerCode - $requestURL - $message";
   }
 }
+
+// Enum to indicate responses when combined together.
+enum ResponseStatus { OK, OKWithSomeFailures, Failure }
