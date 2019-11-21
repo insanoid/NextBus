@@ -1,4 +1,4 @@
-package com.example.next_bus
+package com.karthik.next_bus
 
 import android.os.Bundle
 
