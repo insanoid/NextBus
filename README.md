@@ -1,4 +1,4 @@
-# NextBus - Transit Departures Near You In A Single Glance (Berlin)
+# NextBus - One Glance Transit Lookup for Berlin
 
 <a href='https://play.google.com/store/apps/details?id=com.karthik.next_bus&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width=150px/></a>
 
