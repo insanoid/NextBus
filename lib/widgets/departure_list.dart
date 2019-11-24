@@ -146,7 +146,7 @@ class _DepartureListState extends State<DepartureList> {
   ListView _buildDepartureList(context, List<TransitDeparture> departures,
       GeolocationStatus geolocationStatus) {
     // We need it to be null to make sure empty view is being shown when nothing is there.
-    departures = departures.length == 0 ? null : departures;
+    departures = departures == null || departures.length == 0 ? null : departures;
     return new ListView.separated(
       physics: AlwaysScrollableScrollPhysics(),
       separatorBuilder: (BuildContext context, int index) => Divider(),
