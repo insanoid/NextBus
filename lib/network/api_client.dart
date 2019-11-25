@@ -116,7 +116,11 @@ class BVGAPIClient {
             var key = "${departure.name}/${departure.direction}";
 
             // Save the stop details in the departure object as it is used to show distance from the user's location.
-            departure.stop = stopMap[departure.stop.id];
+            var stopInformation = stopMap[departure.stop.id];
+            if(stopInformation == null) {
+              continue;
+            }
+            departure.stop = stopInformation;
             var currentValue = allDepartures[key];
             // If the departure is not in the list OR it's from a stop closer to the user - save/replace it.
             if (currentValue == null ||
