@@ -82,7 +82,7 @@ class TransitDepartureList {
   TransitDepartureList({this.departures});
 
   factory TransitDepartureList.fromJson(List<dynamic> parsedJson) {
-    List<TransitDeparture> departures = new List<TransitDeparture>();
+    List<TransitDeparture> departures = <TransitDeparture>[];
     departures = parsedJson.map((i) => TransitDeparture.fromJson(i)).toList();
     return new TransitDepartureList(
       departures: departures,
