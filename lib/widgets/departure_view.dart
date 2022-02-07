@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:location_permissions/location_permissions.dart';
 import 'package:next_bus/models/network_error.dart';
 import 'package:next_bus/models/transit_departure.dart';
 import 'package:next_bus/network/api_client.dart';
 import 'package:next_bus/widgets/departure_list.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class DepartureView extends StatefulWidget {
   @override
@@ -17,8 +17,9 @@ class DepartureViewState extends State<DepartureView> {
   List<TransitDeparture> allDepartures;
   ResponseStatus lastResponseStatus;
   Timer timer;
-  GeolocationStatus geolocationStatus;
-  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  bool locationAllowed;
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      new GlobalKey<ScaffoldMessengerState>();
   bool isLoading;
 
   Widget get _loadingView {
@@ -37,7 +38,7 @@ class DepartureViewState extends State<DepartureView> {
         color: Color(0xff000000),
         child: new DepartureList(
             departures: allDepartures,
-            geolocationStatus: geolocationStatus,
+            geolocationAllowed: locationAllowed,
             responseStatus: lastResponseStatus),
         onRefresh: () => _refreshDepartures(true),
       )),
@@ -61,7 +62,7 @@ class DepartureViewState extends State<DepartureView> {
       fontFamily: "TransitBold",
     );
     return new Scaffold(
-      key: _scaffoldKey,
+      key: _scaffoldMessengerKey,
       appBar: new AppBar(
         title: new Text("NextBus", style: headerTitleStyle),
         backgroundColor: Color(0xffFBE352),
@@ -102,14 +103,14 @@ class DepartureViewState extends State<DepartureView> {
     debugPrint('Refreshing departures...');
     // This callback fails if the permission dialog is presented and the user selects denied.
     // It throws an exception, when that happens we just show the warning and stop.
-    Position position = await Geolocator()
-        .getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
+    Position position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high)
         .catchError(_handleLocationFailure);
     if (position == null) {
       // the error block will handle fixing UI.
       return;
     }
-    geolocationStatus = GeolocationStatus.granted;
+    locationAllowed = true;
     debugPrint("Found Location: $position");
     // Restart timer here; If the user manually refreshed the list we do not need to trigger it again for the refresh duration.
     _restartTimer();
@@ -138,7 +139,7 @@ class DepartureViewState extends State<DepartureView> {
     // We do not want to keep restarting the location check if it failed once, needs to be manually triggered.
     // Avoids spawning multiple error dialogs.
     _killTimer();
-    geolocationStatus = GeolocationStatus.denied;
+    locationAllowed = false;
     _showLocationPermissionErrorDialog();
     setState(() {
       isLoading = false;
@@ -147,8 +148,8 @@ class DepartureViewState extends State<DepartureView> {
   }
 
   void showErrorSnackBar(bool onlyPartialErrors) {
-    _scaffoldKey.currentState.hideCurrentSnackBar();
-    _scaffoldKey.currentState.showSnackBar(new SnackBar(
+    _scaffoldMessengerKey.currentState.hideCurrentSnackBar();
+    _scaffoldMessengerKey.currentState.showSnackBar(new SnackBar(
       content: onlyPartialErrors
           ? new Text("Unable to check all available stops at the moment (API).")
           : new Text("Unable to get any nearby stops (API)."),
@@ -173,16 +174,16 @@ class DepartureViewState extends State<DepartureView> {
               "NextBus needs to know where you are to get stops that are near you. We do not save or share your location."),
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
-            new FlatButton(
+            new TextButton(
               child: new Text("Close"),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-            new FlatButton(
+            new TextButton(
               child: new Text("Open Permissions"),
               onPressed: () {
-                LocationPermissions().openAppSettings();
+                openAppSettings();
                 Navigator.of(context).pop();
               },
             ),

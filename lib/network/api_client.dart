@@ -68,8 +68,7 @@ class BVGAPIClient {
   }
 
   // get all the departures nearby with the only the closest stop for each transit line.
-  static Future getDeparturesNearby(
-      double latitude, double longitude) async {
+  static Future getDeparturesNearby(double latitude, double longitude) async {
     // First we fetch all stops that are nearby and have unique lines.
     var stopsResult = await _getStops(latitude, longitude, onlyNeeded: true);
 
@@ -90,7 +89,7 @@ class BVGAPIClient {
 
     // Since the departure response's stop data is not complete we need to keep a map of stop ID to stop data so we can use it later.
     Map<String, TransitStop> stopMap = new Map();
-    List<Future> stopRequestList = new List();
+    List<Future> stopRequestList = [];
     for (TransitStop stop in stopsResult) {
       stopMap[stop.id] = stop;
       stopRequestList.add(_getDepartures(stop.id));
@@ -117,7 +116,7 @@ class BVGAPIClient {
 
             // Save the stop details in the departure object as it is used to show distance from the user's location.
             var stopInformation = stopMap[departure.stop.id];
-            if(stopInformation == null) {
+            if (stopInformation == null) {
               continue;
             }
             departure.stop = stopInformation;

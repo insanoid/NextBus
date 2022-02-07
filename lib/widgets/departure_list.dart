@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:next_bus/models/network_error.dart';
 import 'package:next_bus/models/transit_departure.dart';
 import 'package:next_bus/models/transit_stop.dart';
@@ -9,15 +8,15 @@ import 'package:url_launcher/url_launcher.dart';
 // A UI to show the list of departures with pull-to-refresh feature.
 class DepartureList extends StatefulWidget {
   DepartureList(
-      {Key key, this.departures, this.geolocationStatus, this.responseStatus})
+      {Key key, this.departures, this.geolocationAllowed, this.responseStatus})
       : super(key: key);
 
   // Stores the list of all departures previously fetched.
   final List<TransitDeparture> departures;
   // Status of the Location API Permission.
-  GeolocationStatus geolocationStatus;
+  final bool geolocationAllowed;
   // Response from the last request to fetch departures (important in case of no stops/departures).
-  ResponseStatus responseStatus;
+  final ResponseStatus responseStatus;
 
   @override
   State<StatefulWidget> createState() {
@@ -30,14 +29,13 @@ class _DepartureListState extends State<DepartureList> {
   @override
   Widget build(BuildContext context) {
     return _buildDepartureList(
-        context, widget.departures, widget.geolocationStatus);
+        context, widget.departures, widget.geolocationAllowed);
   }
 
   String _subtitleForEmptyState() {
     if (widget.responseStatus == ResponseStatus.OK) {
       return "There are no stops or departures near you.";
-    } else if (widget.geolocationStatus != null &&
-        widget.geolocationStatus != GeolocationStatus.granted) {
+    } else if (!widget.geolocationAllowed) {
       return "Enable Location Permissions for NextBus to continue.";
     }
     return "";
@@ -109,7 +107,7 @@ class _DepartureListState extends State<DepartureList> {
   // Transit departure time with the first time being bigger than other 2 (max 3).
   Widget _buildTransitDepartureTimeTile(TransitDeparture departure) {
     List<int> departureTimes = departure.nextDepartures();
-    var formattedDepartureTime = List();
+    var formattedDepartureTime = [];
     for (int time in departureTimes) {
       // If time is less than zero, we don't even consider.
       if (time < 0) {
@@ -120,7 +118,7 @@ class _DepartureListState extends State<DepartureList> {
           : formattedDepartureTime.add("$time min");
     }
 
-    var departureTimeTextElements = List<Widget>();
+    var departureTimeTextElements = <Widget>[];
     // First
     if (formattedDepartureTime.length > 0) {
       departureTimeTextElements.add(Text(formattedDepartureTime.first,
@@ -143,10 +141,11 @@ class _DepartureListState extends State<DepartureList> {
     );
   }
 
-  ListView _buildDepartureList(context, List<TransitDeparture> departures,
-      GeolocationStatus geolocationStatus) {
+  ListView _buildDepartureList(
+      context, List<TransitDeparture> departures, bool geolocationStatus) {
     // We need it to be null to make sure empty view is being shown when nothing is there.
-    departures = departures == null || departures.length == 0 ? null : departures;
+    departures =
+        departures == null || departures.length == 0 ? null : departures;
     return new ListView.separated(
       physics: AlwaysScrollableScrollPhysics(),
       separatorBuilder: (BuildContext context, int index) => Divider(),

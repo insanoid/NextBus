@@ -27,7 +27,7 @@ class TransitStop {
     // We save the various lines passing through this stop.
     // We only need their names as further information can be fetched through departures.
     List<dynamic> lines = json["lines"] == null
-        ? new List<dynamic>()
+        ? <dynamic>[]
         : json["lines"].map((i) => i["name"]).toList();
     return TransitStop(
         id: json["id"],
@@ -59,7 +59,7 @@ class TransitStopList {
   TransitStopList({this.stops});
 
   factory TransitStopList.fromJson(List<dynamic> parsedJson) {
-    List<TransitStop> stops = new List<TransitStop>();
+    List<TransitStop> stops = <TransitStop>[];
     stops = parsedJson.map((i) => TransitStop.fromJson(i)).toList();
     return new TransitStopList(
       stops: stops,
