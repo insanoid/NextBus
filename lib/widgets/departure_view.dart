@@ -35,20 +35,19 @@ class DepartureViewState extends State<DepartureView> {
     return new Container(
       child: new Center(
           child: new RefreshIndicator(
-            backgroundColor: Color(0xffFBE352),
-            color: Color(0xff000000),
-            child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(
-                  dragDevices: {
-                    PointerDeviceKind.touch,
-                    PointerDeviceKind.mouse,
-                  },
-                ),
-                child: new DepartureList(
-                    departures: allDepartures,
-                    geolocationAllowed: locationAllowed,
-                    responseStatus: lastResponseStatus)
+        backgroundColor: Color(0xffFBE352),
+        color: Color(0xff000000),
+        child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(context).copyWith(
+              dragDevices: {
+                PointerDeviceKind.touch,
+                PointerDeviceKind.mouse,
+              },
             ),
+            child: new DepartureList(
+                departures: allDepartures,
+                geolocationAllowed: locationAllowed,
+                responseStatus: lastResponseStatus)),
         onRefresh: () => _refreshDepartures(true),
       )),
     );
@@ -72,10 +71,12 @@ class DepartureViewState extends State<DepartureView> {
     );
     return new Scaffold(
       key: _scaffoldMessengerKey,
-      appBar: new AppBar(
-        title: new Text("NextBus", style: headerTitleStyle),
-        backgroundColor: Color(0xffFBE352),
-      ),
+      appBar: Theme.of(context).platform == TargetPlatform.macOS
+          ? null
+          : new AppBar(
+              title: new Text("NextBus", style: headerTitleStyle),
+              backgroundColor: Color(0xffFBE352),
+            ),
       body: _pageToDisplay,
     );
   }
@@ -179,8 +180,9 @@ class DepartureViewState extends State<DepartureView> {
         // return object of type Dialog
         return AlertDialog(
           title: new Text("Location Sharing Disabled"),
-          content: new Text(Theme.of(context).platform == TargetPlatform.macOS ? "NextBus needs to know where you are to get stops that are near you. Please go to System Preferences > Security & Privacy > Location Services and enable location sharing with NextBus to continue" :
-              "NextBus needs to know where you are to get stops that are near you. We do not save or share your location."),
+          content: new Text(Theme.of(context).platform == TargetPlatform.macOS
+              ? "NextBus needs to know where you are to get stops that are near you. Please go to System Preferences > Security & Privacy > Location Services and enable location sharing with NextBus to continue"
+              : "NextBus needs to know where you are to get stops that are near you. We do not save or share your location."),
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
             new TextButton(
@@ -190,9 +192,11 @@ class DepartureViewState extends State<DepartureView> {
               },
             ),
             new TextButton(
-              child: new Text(Theme.of(context).platform == TargetPlatform.macOS? "Retry" : "Open Permissions"),
+              child: new Text(Theme.of(context).platform == TargetPlatform.macOS
+                  ? "Retry"
+                  : "Open Permissions"),
               onPressed: () {
-                if(Theme.of(context).platform == TargetPlatform.macOS) {
+                if (Theme.of(context).platform == TargetPlatform.macOS) {
                   _refreshDepartures(false);
                 } else {
                   openAppSettings();
