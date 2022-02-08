@@ -9,11 +9,11 @@ import '../models/network_error.dart';
 
 // A class to store all the API method and URL strings.
 class APIMethods {
-  static const String baseURL = "https://bvg-rest.karthikeyaudupa.now.sh/";
+  static const String baseURL = "https://bvg-rest.karthikeyaudupa.vercel.app/";
   static const String nearbyStopsAPI = "/stops/nearby";
 
   static String stopDeparturesAPI(String stopID) {
-    return "stations/$stopID/departures";
+    return "stops/$stopID/departures";
   }
 }
 

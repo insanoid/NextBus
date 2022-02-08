@@ -170,7 +170,7 @@ class DepartureViewState extends State<DepartureView> {
         // return object of type Dialog
         return AlertDialog(
           title: new Text("Location Sharing Disabled"),
-          content: new Text(
+          content: new Text(Theme.of(context).platform == TargetPlatform.macOS ? "NextBus needs to know where you are to get stops that are near you. Please go to System Preferences > Security & Privacy > Location Services and enable location sharing with NextBus to continue" :
               "NextBus needs to know where you are to get stops that are near you. We do not save or share your location."),
           actions: <Widget>[
             // usually buttons at the bottom of the dialog
@@ -181,9 +181,13 @@ class DepartureViewState extends State<DepartureView> {
               },
             ),
             new TextButton(
-              child: new Text("Open Permissions"),
+              child: new Text(Theme.of(context).platform == TargetPlatform.macOS? "Retry" : "Open Permissions"),
               onPressed: () {
-                openAppSettings();
+                if(Theme.of(context).platform == TargetPlatform.macOS) {
+                  _refreshDepartures(false);
+                } else {
+                  openAppSettings();
+                }
                 Navigator.of(context).pop();
               },
             ),

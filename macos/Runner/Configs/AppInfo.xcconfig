@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = next_bus
+PRODUCT_NAME = NextBus
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.karthik.nextBus
+PRODUCT_BUNDLE_IDENTIFIER = com.karthik.nextbus
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2022 com.karthik. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2022 Karthikeya. All rights reserved.
