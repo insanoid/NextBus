@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -34,12 +35,20 @@ class DepartureViewState extends State<DepartureView> {
     return new Container(
       child: new Center(
           child: new RefreshIndicator(
-        backgroundColor: Color(0xffFBE352),
-        color: Color(0xff000000),
-        child: new DepartureList(
-            departures: allDepartures,
-            geolocationAllowed: locationAllowed,
-            responseStatus: lastResponseStatus),
+            backgroundColor: Color(0xffFBE352),
+            color: Color(0xff000000),
+            child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                  },
+                ),
+                child: new DepartureList(
+                    departures: allDepartures,
+                    geolocationAllowed: locationAllowed,
+                    responseStatus: lastResponseStatus)
+            ),
         onRefresh: () => _refreshDepartures(true),
       )),
     );
